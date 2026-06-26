@@ -8,25 +8,13 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol"; */
 
-import {
-    ERC721
-} from "lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
-import {
-    ERC721Enumerable
-} from "lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import {
-    IERC20
-} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
-import {
-    IERC721
-} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
-import {
-    Counters
-} from "lib/openzeppelin-contracts/contracts/utils/Counters.sol";
+import {ERC721} from "lib/openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import {ERC721Enumerable} from "lib/openzeppelin-contracts/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {IERC721} from "lib/openzeppelin-contracts/contracts/token/ERC721/IERC721.sol";
+import {Counters} from "lib/openzeppelin-contracts/contracts/utils/Counters.sol";
 import {Ownable} from "lib/openzeppelin-contracts/contracts/access/Ownable.sol";
-import {
-    ReentrancyGuard
-} from "lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "lib/openzeppelin-contracts/contracts/security/ReentrancyGuard.sol";
 
 contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     //EVENTOS
@@ -44,12 +32,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     // tokenId: El ID único del NFT reclamado.
 
     // Transferencia de NFT de un usuario a otro.
-    event Trade(
-        address indexed buyer,
-        address indexed seller,
-        uint256 indexed tokenId,
-        uint256 value
-    );
+    event Trade(address indexed buyer, address indexed seller, uint256 indexed tokenId, uint256 value);
     // buyer: La dirección del comprador del NFT.
     // seller: La dirección del vendedor del NFT.
     // tokenId: El ID único del NFT que se transfiere.
@@ -57,6 +40,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     // Venta de un NFT.
     event PutOnSale(uint256 indexed tokenId, uint256 price);
+
     // tokenId: El ID único del NFT que se pone en venta.
     // price: El precio al cual se pone en venta el NFT (No indexed).
 
@@ -124,10 +108,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         require(validValues[value], "Invalid value"); // Verificación del valor especificado para los NFTs según los valores permitidos en validValues. Incluir un mensaje de falla.
 
         // Verificacón del valor total después de la compra (no debe exeder el valor máximo permitido "maxValueToRaise"). Incluir un mensaje de falla.
-        require(
-            totalValue + value * amount <= maxValueToRaise,
-            "Max value to raise exceeded"
-        );
+        require(totalValue + value * amount <= maxValueToRaise, "Max value to raise exceeded");
 
         totalValue += value * amount; // Incremento del valor total acumulado por el valor de los NFTs comprados.
 
@@ -140,25 +121,13 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         }
 
         // Transfencia de fondos desde el comprador (_msgSender()) al recolector de fondos (fundsCollector) por el valor total de los NFTs comprados.
-        if (
-            !fundsToken.transferFrom(
-                _msgSender(),
-                fundsCollector,
-                value * amount
-            )
-        ) {
+        if (!fundsToken.transferFrom(_msgSender(), fundsCollector, value * amount)) {
             revert("Cannot send funds tokens"); // Incluir un mensaje de falla.
         }
 
         // Transferencia de tarifas de compra desde el comprador (_msgSender()) al recolector de tarifas (feesCollector).
         // Tarifa = fracción del valor total de la compra (value * amount * buyFee / 10000).
-        if (
-            !fundsToken.transferFrom(
-                _msgSender(),
-                feesCollector,
-                (value * amount * buyFee) / 10000
-            )
-        ) {
+        if (!fundsToken.transferFrom(_msgSender(), feesCollector, (value * amount * buyFee) / 10000)) {
             revert("Cannot send fees tokens"); // Incluir un mensaje de falla.
         }
     }
@@ -169,10 +138,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     function claim(uint256[] calldata listTokenIds) external nonReentrant {
         require(canClaim, "Can't claim"); // Verificacón habilitación de "reclamo" (canClaim). Incluir un mensaje de falla.
 
-        require(
-            listTokenIds.length > 0 && listTokenIds.length <= maxBatchCount,
-            "Invalid listTokenIds"
-        ); // Verificacón de la cantidad de tokens a reclamar (mayor que 0 y menor o igual a maxBatchCount). Incluir un mensaje de falla.
+        require(listTokenIds.length > 0 && listTokenIds.length <= maxBatchCount, "Invalid listTokenIds"); // Verificacón de la cantidad de tokens a reclamar (mayor que 0 y menor o igual a maxBatchCount). Incluir un mensaje de falla.
         uint256 claimValue = 0; // Inicializacion de claimValue a 0.
         TokenSale storage tokenSale; // Variable tokenSale.
         for (uint256 i = 0; i < listTokenIds.length; i++) {
@@ -181,10 +147,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
             require(_exists(listTokenIds[i]), "Token not exists"); // Verificacón listTokenId[i] exista. Incluir un mensaje de falla.
 
             // Verificamos que el llamador de la función (_msgSender()) sea el propietario del token. Si no es así, la transacción falla con el mensaje "Only owner can Claim".
-            require(
-                ownerOf(listTokenIds[i]) == _msgSender(),
-                "Only owner can Claim"
-            ); // Verificacón que _msgSender()) sea el propietario del token. Incluir un mensaje de falla.
+            require(ownerOf(listTokenIds[i]) == _msgSender(), "Only owner can Claim"); // Verificacón que _msgSender()) sea el propietario del token. Incluir un mensaje de falla.
             claimValue += values[listTokenIds[i]]; // Suma de el valor del token al claimValue acumulado.
             values[listTokenIds[i]] = 0; // Reseteo del valor del token a 0.
 
@@ -200,13 +163,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
         // Calculo del monto total a transferir (claimValue + (claimValue * profitToPay / 10000)).
         // Transferir los fondos desde fundsCollector al (_msgSender()).
-        if (
-            !fundsToken.transferFrom(
-                fundsCollector,
-                _msgSender(),
-                claimValue + ((claimValue * profitToPay) / 10000)
-            )
-        ) {
+        if (!fundsToken.transferFrom(fundsCollector, _msgSender(), claimValue + ((claimValue * profitToPay) / 10000))) {
             revert("Cannot send funds"); // Incluir un mensaje de falla.
         }
     }
@@ -225,24 +182,12 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
         require(tokenSale.onSale, "Token not on sale"); // Verificación del estado de venta (onSale). Incluir un mensaje de falla.
 
         // Transferencia del precio de venta del comprador al propietario actual del NFT usando fundsToken.
-        if (
-            !fundsToken.transferFrom(
-                _msgSender(),
-                ownerOf(tokenId),
-                tokenSale.price
-            )
-        ) {
+        if (!fundsToken.transferFrom(_msgSender(), ownerOf(tokenId), tokenSale.price)) {
             revert("Cannot send funds"); // Incluir un mensaje de falla.
         }
 
         // Transferencia de tarifa de comercio (calculada como un porcentaje del valor del NFT) del comprador al feesCollector.
-        if (
-            !fundsToken.transferFrom(
-                _msgSender(),
-                feesCollector,
-                (tokenSale.price * tradeFee) / 10000
-            )
-        ) {
+        if (!fundsToken.transferFrom(_msgSender(), feesCollector, (tokenSale.price * tradeFee) / 10000)) {
             revert("Cannot send fees"); // Incluir un mensaje de falla.
         }
 
@@ -378,10 +323,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
     }
 
     // Buscar un valor en un array y retornar su índice o la longitud del array si no se encuentra.
-    function find(
-        uint256[] storage list,
-        uint256 value
-    ) private view returns (uint) {
+    function find(uint256[] storage list, uint256 value) private view returns (uint256) {
         // Parámetros, array de enteros en el cual se buscará el valor y valor que se buscará en el array..
 
         for (uint256 i = 0; i < list.length; i++) {
@@ -397,28 +339,15 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     // Funciones para deshabilitar las transferencias de NFTs,
 
-    function transferFrom(
-        address,
-        address,
-        uint256
-    ) public pure override(ERC721, IERC721) {
+    function transferFrom(address, address, uint256) public pure override(ERC721, IERC721) {
         revert("Not Allowed");
     }
 
-    function safeTransferFrom(
-        address,
-        address,
-        uint256
-    ) public pure override(ERC721, IERC721) {
+    function safeTransferFrom(address, address, uint256) public pure override(ERC721, IERC721) {
         revert("Not Allowed");
     }
 
-    function safeTransferFrom(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public pure override(ERC721, IERC721) {
+    function safeTransferFrom(address, address, uint256, bytes memory) public pure override(ERC721, IERC721) {
         revert("Not Allowed");
     }
 
@@ -426,11 +355,7 @@ contract CCNFT is ERC721Enumerable, Ownable, ReentrancyGuard {
 
     // Funciones para asegurar que el contrato cumple con los estándares requeridos por ERC721 y ERC721Enumerable.
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal override(ERC721Enumerable) {
+    function _beforeTokenTransfer(address from, address to, uint256 tokenId) internal override(ERC721Enumerable) {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 }
