@@ -32,14 +32,70 @@ Ambos contratos están **verificados** en Etherscan (código fuente público).
 - **Tx de despliegue BUSD:** [`0xe1edfe4f...59db6742`](https://sepolia.etherscan.io/tx/0xe1edfe4f2c3812c97fd54fd01656294aa015a8b0488190e7dd09956059db6742)
 - **Tx de despliegue CCNFT:** [`0x686e52c6...da845c53`](https://sepolia.etherscan.io/tx/0x686e52c6cbdcf2b85600aacbbe7524bd72e5401b45112281b8b8e014da845c53)
 
-## Interacciones realizadas
+## Ejecutar la compra (`buy`) 
 
-Flujo ejecutado on-chain para concretar la compra de un NFT:
+Para que `buy` funcione, hay que cumplir varias condiciones previas: aprobar el gasto de BUSD
+y configurar los parámetros del contrato CCNFT. 
 
-1. `approve` en BUSD autorizando al contrato CCNFT a gastar los BUSD.
-2. Configuración del CCNFT (owner): `setFundsToken`, `setFundsCollector`, `setFeesCollector`,
-   `setCanBuy(true)`, `addValidValues`, `setMaxBatchCount`, `setMaxValueToRaise`, `setBuyFee`.
-3. `buy(value, amount)` → se minteó el **NFT tokenId 0** al comprador.
+> **Nota sobre decimales:** BUSD tiene 18 decimales, así que los montos se expresan en su unidad
+> mínima (wei). Por ejemplo, `1 BUSD = 1000000000000000000` (1 seguido de 18 ceros).
+
+### 1. `approve` (en el contrato BUSD)
+
+El contrato CCNFT necesita permiso para gastar los BUSD del comprador. Esto se hace en el
+**contrato BUSD**, función `approve`:
+
+| Parámetro | Valor |
+|---|---|
+| `spender` | `0xF91E56dCb0F0229FA12C29b50D4fB70cB76D96c0` (dirección del CCNFT) |
+| `amount`  | `1000000000000000000` (lo necesario para comprar 1 NFT de valor 1 BUSD) |
+
+> Conviene aprobar un monto mayor (p. ej. el total `10000000000000000000000000`) para no tener
+> que repetir el `approve` en cada compra.
+
+### 2. Seteos en el contrato CCNFT (solo el `owner`)
+
+| Función | Parámetro | Valor | Propósito |
+|---|---|---|---|
+| `setFundsToken`     | `token`           | `0xA073c37D96a375fd176144b9D248b06966ca0d8C` | Define BUSD como moneda |
+| `setFundsCollector` | `_address`        | `0xCd81faf98327B03bd9f783538414fA0400FF8bf2` | Recibe los fondos de las ventas |
+| `setFeesCollector`  | `_address`        | `0xCd81faf98327B03bd9f783538414fA0400FF8bf2` | Recibe las tarifas |
+| `setCanBuy`         | `_canBuy`         | `true`                                       | Habilita la compra |
+| `addValidValues`    | `value`           | `1000000000000000000`                        | Marca 1 BUSD como valor válido de NFT |
+| `setMaxBatchCount`  | `_maxBatchCount`  | `10`                                         | Máx. NFTs por operación |
+| `setMaxValueToRaise`| `_maxValueToRaise`| `100000000000000000000000`                   | Tope total a recaudar |
+| `setBuyFee`         | `_buyFee`         | `0`                                          | Tarifa de compra (0 = sin tarifa) |
+
+### 3. `buy` (en el contrato CCNFT)
+
+| Parámetro | Valor |
+|---|---|
+| `value`  | `1000000000000000000` (mismo valor marcado como válido) |
+| `amount` | `1` |
+
+Resultado: se minteó el **NFT tokenId 0** al comprador y se transfirieron los BUSD.
+
+## Interactuar con el contrato en Etherscan
+
+Como los contratos están verificados, se puede interactuar con cualquier función desde la web
+de Sepolia Etherscan:
+
+1. Entrar a la dirección del contrato en [sepolia.etherscan.io](https://sepolia.etherscan.io).
+2. Pestaña **Contract** → tres sub-pestañas:
+   - **Read Contract**: funciones de solo lectura (no cuestan gas). Sirven para consultar estado:
+     `balanceOf`, `ownerOf`, `totalSupply`, `canBuy`, `fundsToken`, etc. Completar los parámetros
+     (si los pide) y presionar **Query**.
+   - **Write Contract**: funciones que modifican el estado (cuestan gas y requieren wallet).
+3. Para escribir: en **Write Contract** → **Connect to Web3** y conectar MetaMask (red Sepolia).
+   - Las funciones `onlyOwner` (los `set...`) solo funcionan si esta conectado con la wallet owner.
+4. Elegir la función, completar los parámetros y presionar **Write**. Confirmar la transacción en MetaMask.
+
+**Recordatorios importantes:**
+
+- Los montos de BUSD van con **18 decimales** (en wei).
+- El `value` que pases a `buy` debe estar previamente habilitado con `addValidValues`.
+- Antes de `buy` o `trade`, necesitamos `approve` suficiente en el contrato BUSD.
+- Para ejecutar `trade`/`putOnSale` el flag `canTrade` debe estar en `true`; para `claim`, `canClaim`.
 
 ## Capturas (MetaMask, red Sepolia)
 
